@@ -33,9 +33,9 @@ typedef struct
 // Global parameters
 ////////////////////////////////////////////////////////////////////////////////
 //Number of time steps
-#define   NUM_STEPS 2048
+#define   NUM_STEPS 1024
 //Max option batch size
-#define MAX_OPTIONS 1024
+#define MAX_OPTIONS 1<<21
 
 
 

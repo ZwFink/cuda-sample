@@ -34,7 +34,7 @@
 ################################################################################
 
 # Location of the CUDA Toolkit
-CUDA_PATH?=/Developer/NVIDIA/CUDA-7.5
+CUDA_PATH?=/home/zane/.miniconda3/
 
 ##############################
 # start deprecated interface #
@@ -130,8 +130,8 @@ HOST_COMPILER ?= g++
 NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # internal flags
-NVCCFLAGS   := -m${TARGET_SIZE}
-CCFLAGS     :=
+NVCCFLAGS   := -m${TARGET_SIZE} -g
+CCFLAGS     := -g
 LDFLAGS     :=
 
 # build flags
@@ -189,7 +189,7 @@ LIBRARIES :=
 SAMPLE_ENABLED := 1
 
 # Gencode arguments
-SMS ?= 20 30 35 37 50 52
+SMS ?= 70 86
 
 ifeq ($(SMS),)
 $(info >>> WARNING - no SM architectures have been specified - waiving sample <<<)

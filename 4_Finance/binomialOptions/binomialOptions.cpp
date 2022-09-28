@@ -29,6 +29,127 @@
 #include "binomialOptions_common.h"
 #include "realtype.h"
 
+#define DOUBLE 0
+#define FLOAT 1
+#define INT 2
+#define LONG 3
+
+void writeQualityFile(const char *fileName, void *ptr, int type, size_t numElements){
+    FILE *fd = fopen(fileName, "wb");
+    assert(fd && "Could Not Open File\n");
+    fwrite(&numElements, sizeof(size_t), 1, fd);
+    fwrite(&type, sizeof(int), 1, fd);
+    if ( type == DOUBLE)
+        fwrite(ptr, sizeof(double), numElements, fd);
+    else if ( type == FLOAT)
+        fwrite(ptr, sizeof(float), numElements, fd);
+    else if ( type == INT)
+        fwrite(ptr, sizeof(int), numElements, fd);
+    else
+        assert(0 && "Not supported data type to write\n");
+    fclose(fd);
+}
+void readData(FILE *fd, double **data,  size_t* numElements){
+    assert(fd && "File pointer is not valid\n");
+    fread(numElements, sizeof(size_t),1,fd);
+    size_t elements = *numElements;
+    double *ptr = (double*) malloc (sizeof(double)*elements);
+    assert(ptr && "Could Not allocate pointer\n");
+    *data = ptr;
+    size_t i;
+    int type;
+    fread(&type, sizeof(int), 1, fd); 
+    if ( type == DOUBLE){
+        fread(ptr, sizeof(double), elements, fd);
+    }
+    else if ( type == FLOAT){
+        float *tmp = (float*) malloc (sizeof(float)*elements);
+        fread(tmp, sizeof(float), elements,fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (double) tmp[i];
+        }
+        free (tmp);
+    }
+    else if( type == INT ){
+        int *tmp = (int*) malloc (sizeof(int)*elements);
+        fread(tmp, sizeof(int), elements, fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (double) tmp[i];
+        }
+        free(tmp);
+    }
+    return; 
+}
+
+void readData(FILE *fd, float **data,  size_t* numElements){
+    assert(fd && "File pointer is not valid\n");
+    fread(numElements, sizeof(size_t),1,fd);
+    size_t elements = *numElements;
+
+    float *ptr = (float*) malloc (sizeof(float)*elements);
+    assert(ptr && "Could Not allocate pointer\n");
+    *data = ptr;
+
+    size_t i;
+    int type;
+    fread(&type, sizeof(int), 1, fd); 
+    if ( type == FLOAT ){
+        fread(ptr, sizeof(float), elements, fd);
+    }
+    else if ( type == DOUBLE){
+        double *tmp = (double*) malloc (sizeof(double)*elements);
+        fread(tmp, sizeof(double), elements,fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (float) tmp[i];
+        }
+        free (tmp);
+    }
+    else if ( type == INT ){
+        int *tmp = (int*) malloc (sizeof(int) * elements);
+        fread(tmp, sizeof(int), elements, fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (float) tmp[i];
+        }
+        free(tmp);
+    }
+    return; 
+}
+
+void readData(FILE *fd, int **data,   size_t* numElements){
+    assert(fd && "File pointer is not valid\n");
+    fread(numElements, sizeof(size_t),1,fd);
+    size_t elements = *numElements;
+
+    int *ptr = (int*) malloc (sizeof(int)*elements);
+    assert(ptr && "Could Not allocate pointer\n");
+    *data = ptr;
+
+    size_t i;
+    int type;
+    fread(&type, sizeof(int), 1, fd); 
+    if ( type == INT ){
+        fread(ptr, sizeof(int), elements, fd);
+    }
+    else if ( type == DOUBLE){
+        double *tmp = (double*) malloc (sizeof(double)*elements);
+        fread(tmp, sizeof(double), elements,fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (int) tmp[i];
+        }
+        free (tmp);
+    }
+    else if( type == FLOAT ){
+        float *tmp = (float*) malloc (sizeof(float)*elements);
+        fread(tmp, sizeof(float), elements, fd);
+        for ( i = 0; i < elements; i++){
+            ptr[i] = (int) tmp[i];
+        }
+        free(tmp);
+    }
+    return; 
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Black-Scholes formula for binomial tree results validation
 ////////////////////////////////////////////////////////////////////////////////
@@ -85,16 +206,67 @@ int main(int argc, char **argv)
         exit(EXIT_WAIVED);
     }
 
+  FILE *file;
+
+  if(!(argc == 3 || argc == 4))
+    {
+      std::cout << "USAGE: " << argv[0] << " input_file num_steps [output_file]";
+      return EXIT_FAILURE;
+    }
+
+  char *inputFile = argv[1];
+
+    //Read input data from file
+    file = fopen(inputFile, "rb");
+    if(file == NULL) {
+        printf("ERROR: Unable to open file `%s'.\n", inputFile);
+        exit(1);
+    }
+
+  bool write_output = false;
+  std::string ofname;
+  if(argc == 4)
+    {
+      write_output = true;
+      ofname = argv[3];
+    }
+
+
+  // sptprice
+  real *S;
+  // strike
+  real *X;
+  // time
+  real *T;
+  // rate
+  real *R;
+  // volatility
+  real *V;
+  int *otype;
+
+  real
+    sumDelta, sumRef, gpuTime, errorVal;
+
+  printf("Reading input data...\n");
+  size_t numOptions = 0;
+
+#define PAD 256
+#define LINESIZE 64
+    readData(file,&otype, &numOptions);  
+    readData(file,&S, &numOptions);  
+    readData(file,&X, &numOptions);  
+    readData(file,&R, &numOptions);  
+    readData(file,&V, &numOptions);  
+    readData(file,&T, &numOptions);  
+
+  const int NUM_OPTIONS = numOptions;
+
     const int OPT_N = MAX_OPTIONS;
 
-    TOptionData optionData[MAX_OPTIONS];
-    real
-    callValueBS[MAX_OPTIONS],
-                callValueGPU[MAX_OPTIONS],
-                callValueCPU[MAX_OPTIONS];
-
-    real
-    sumDelta, sumRef, gpuTime, errorVal;
+    TOptionData *optionData = new TOptionData[MAX_OPTIONS];
+    real *callValueBS = new real[MAX_OPTIONS];
+    real *callValueGPU = new real[MAX_OPTIONS];
+    real *callValueCPU = new real[MAX_OPTIONS];
 
     StopWatchInterface *hTimer = NULL;
     int i;
@@ -107,11 +279,11 @@ int main(int argc, char **argv)
 
     for (i = 0; i < OPT_N; i++)
     {
-        optionData[i].S = randData(5.0f, 30.0f);
-        optionData[i].X = randData(1.0f, 100.0f);
-        optionData[i].T = randData(0.25f, 10.0f);
-        optionData[i].R = 0.06f;
-        optionData[i].V = 0.10f;
+        optionData[i].S = S[i];
+        optionData[i].X = X[i];
+        optionData[i].T = T[i];
+        optionData[i].R = R[i];
+        optionData[i].V = V[i];
         BlackScholesCall(callValueBS[i], optionData[i]);
     }
 
@@ -136,6 +308,12 @@ int main(int argc, char **argv)
     {
         binomialOptionsCPU(callValueCPU[i], optionData[i]);
     }
+
+    if(write_output)
+      {
+        writeQualityFile(ofname.c_str(), callValueGPU, DOUBLE, NUM_OPTIONS);
+      }
+
 
     printf("Comparing the results...\n");
     sumDelta = 0;

@@ -28,7 +28,7 @@ typedef struct
     real puByDf;
     real pdByDf;
 } __TOptionData;
-static __constant__ __TOptionData d_OptionData[MAX_OPTIONS];
+static __device__ __TOptionData d_OptionData[MAX_OPTIONS];
 static __device__           real d_CallValue[MAX_OPTIONS];
 
 
@@ -112,7 +112,7 @@ extern "C" void binomialOptionsGPU(
     int optN
 )
 {
-    __TOptionData h_OptionData[MAX_OPTIONS];
+    __TOptionData *h_OptionData = new __TOptionData[MAX_OPTIONS];
 
     for (int i = 0; i < optN; i++)
     {
@@ -145,4 +145,6 @@ extern "C" void binomialOptionsGPU(
     binomialOptionsKernel<<<optN, THREADBLOCK_SIZE>>>();
     getLastCudaError("binomialOptionsKernel() execution failed.\n");
     checkCudaErrors(cudaMemcpyFromSymbol(callValue, d_CallValue, optN *sizeof(real)));
+
+    delete[] h_OptionData;
 }

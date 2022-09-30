@@ -22,6 +22,8 @@
 #include <string.h>
 #include <math.h>
 #include <cuda_runtime.h>
+#include <algorithm>
+#include <random>
 
 #include <helper_functions.h>
 #include <helper_cuda.h>
@@ -276,17 +278,34 @@ int main(int argc, char **argv)
     printf("Generating input data...\n");
     //Generate options set
     srand(123);
+  // std::random_device dev;
+  // std::mt19937 rng(dev());
+    std::mt19937 rng(123);
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0,numOptions-1);
+
+    // don't get too clever and combine this and the following loop:
+    // a value can get swapped more than once
+    for(i = 0; i < OPT_N; i++)
+      {
+        int newIdx = dist(rng);
+        std::swap(S[i], S[newIdx]);
+        std::swap(X[i], X[newIdx]);
+        std::swap(R[i], R[newIdx]);
+        std::swap(V[i], V[newIdx]);
+        std::swap(T[i], T[newIdx]);
+      }
+
 
     for (i = 0; i < OPT_N; i++)
     {
-        optionData[i].S = S[i];
-        optionData[i].X = X[i];
-        optionData[i].T = T[i];
-        //optionData[i].R = 0.06;
-        //optionData[i].V = 0.10;
-        optionData[i].V = randData(0.01, 0.1);
-        optionData[i].R = randData(0.01, 0.05);
-        BlackScholesCall(callValueBS[i], optionData[i]);
+      optionData[i].S = S[i];
+      optionData[i].X = X[i];
+      optionData[i].T = T[i];
+      //optionData[i].R = 0.06;
+      //optionData[i].V = 0.10;
+      optionData[i].V = randData(0.01, 0.1);
+      optionData[i].R = randData(0.01, 0.05);
+      BlackScholesCall(callValueBS[i], optionData[i]);
     }
 
     printf("Running GPU binomial tree...\n");

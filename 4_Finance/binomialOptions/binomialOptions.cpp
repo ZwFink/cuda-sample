@@ -210,11 +210,13 @@ int main(int argc, char **argv)
 
   FILE *file;
 
-  if(!(argc == 3 || argc == 4))
+  if(!(argc == 4 || argc == 5))
     {
-      std::cout << "USAGE: " << argv[0] << " input_file num_steps [output_file]";
+      std::cout << "USAGE: " << argv[0] << " input_file num_steps seed [output_file]";
       return EXIT_FAILURE;
     }
+
+  int seed = std::atoi(argv[3]);
 
   char *inputFile = argv[1];
 
@@ -227,10 +229,10 @@ int main(int argc, char **argv)
 
   bool write_output = false;
   std::string ofname;
-  if(argc == 4)
+  if(argc == 5)
     {
       write_output = true;
-      ofname = argv[3];
+      ofname = argv[4];
     }
 
 
@@ -277,10 +279,10 @@ int main(int argc, char **argv)
 
     printf("Generating input data...\n");
     //Generate options set
-    srand(123);
+    srand(seed);
   // std::random_device dev;
   // std::mt19937 rng(dev());
-    std::mt19937 rng(123);
+    std::mt19937 rng(seed);
     std::uniform_int_distribution<std::mt19937::result_type> dist(0,numOptions-1);
 
     // don't get too clever and combine this and the following loop:

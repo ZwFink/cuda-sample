@@ -282,8 +282,10 @@ int main(int argc, char **argv)
         optionData[i].S = S[i];
         optionData[i].X = X[i];
         optionData[i].T = T[i];
-        optionData[i].R = R[i];
-        optionData[i].V = V[i];
+        //optionData[i].R = 0.06;
+        //optionData[i].V = 0.10;
+        optionData[i].V = randData(0.01, 0.1);
+        optionData[i].R = randData(0.01, 0.05);
         BlackScholesCall(callValueBS[i], optionData[i]);
     }
 
